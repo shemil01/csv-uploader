@@ -1,0 +1,23 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bulk_jobs",
+  "info": {
+    "singularName": "bulk-job",
+    "pluralName": "bulk-jobs",
+    "displayName": "Bulk Job"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "jobId": { "type": "uid", "targetField": "id", "unique": true },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "processing", "completed", "failed"],
+      "default": "pending"
+    },
+    "total_items": { "type": "integer" },
+    "processed_items": { "type": "integer", "default": 0 },
+    "error": { "type": "text" },
+    "meta": { "type": "json" },
+    "payload": { "type": "json", "private": true }
+  }
+}

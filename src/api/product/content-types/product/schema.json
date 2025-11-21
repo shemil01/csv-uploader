@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "products",
+  "info": {
+    "singularName": "product",
+    "pluralName": "products",
+    "displayName": "product",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "si_number": {
+      "type": "string",
+      "unique": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "code_number": {
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    "mrp": {
+      "type": "decimal"
+    },
+    "mop": {
+      "type": "decimal"
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::category.category",
+      "inversedBy": "products"
+    }
+  }
+}
