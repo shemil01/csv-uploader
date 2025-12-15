@@ -23,7 +23,7 @@ yarn start
 ```
 # Bulk Upload System
 
-This Strapi backend provides APIs for bulk product upload with background processing, progress tracking, with user login
+This Strapi backend provides APIs for bulk product upload with background processing, progress tracking, with user login and role based access.
 It is designed to support page refresh recovery.
 
 🚀 Features
@@ -42,4 +42,48 @@ Multiple uploads by the same user
 Multiple browsers
 
 Page refresh without losing progress
+
+# 📡 API Endpoints
+
+1️⃣ Start Bulk Upload
+
+POST /api/products/bulk-start
+
+2️⃣ Get Upload Progress
+
+GET /api/products/bulk-progress
+
+Query Params
+jobId=uuid
+uploadSessionId=uuid
+
+# How Background Processing Works
+
+User uploads file from frontend
+
+Frontend sends parsed data + uploadSessionId
+
+Backend:
+
+Creates a bulk-job record
+
+Starts async processing
+
+Inserts data in batches (e.g., 100 records)
+
+Progress is updated in DB (processed_items)
+
+Frontend polls /bulk-progress every few seconds
+
+#  Progress Recovery (Refresh Safe)
+
+jobId and uploadSessionId are stored on frontend
+
+On page refresh:
+
+Frontend re-polls /bulk-progress
+
+Backend validates job ownership + session
+
+Upload continues without interruption
 
