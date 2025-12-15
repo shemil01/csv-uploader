@@ -3,31 +3,39 @@
 const { createCoreController } = require("@strapi/strapi").factories;
 
 module.exports = createCoreController("api::product.product", ({ strapi }) => ({
-  // Replace or add a route that accepts full payload and returns jobId
   async bulkStart(ctx) {
-    try {
-      const payload = ctx.request.body;
-      if (!Array.isArray(payload) || payload.length === 0) {
-        return ctx.badRequest("Request must be a non-empty array");
-      }
+    const userId = ctx.state.user?.id;
+    const { data, uploadSessionId } = ctx.request.body;
 
-      const chunkSize = Number(ctx.query.chunkSize) || 100;
+    if (!Array.isArray(data) || data.length === 0)
+      return ctx.badRequest("Payload must not be empty");
 
-      const result = await strapi.service("api::bulk-job.bulk-job").startJobFromPayload(payload, { chunkSize });
+    const result = await strapi
+      .service("api::bulk-job.bulk-job")
+      .startJobFromPayload(data, {
+        userId,
+        uploadSessionId,
+      });
 
-      return ctx.send({ message: "Job started", jobId: result.jobId });
-    } catch (err) {
-      strapi.log.error("bulkStart error", err);
-      return ctx.internalServerError("Failed to start bulk job");
-    }
+    return ctx.send({ jobId: result.jobId });
   },
+  async activeJob(ctx) {
+    const userId = ctx.state.user?.id;
 
-  // Polling endpoint: GET /products/bulk-progress?jobId=...
+    const result = await strapi
+      .service("api::bulk-job.bulk-job")
+      .activeJob(userId);
+
+    return ctx.send(result);
+  },
   async bulkProgress(ctx) {
-    const { jobId } = ctx.query;
-    if (!jobId) return ctx.badRequest("jobId is required");
-    const progress = await strapi.service("api::bulk-job.bulk-job").getProgress(jobId);
-    if (!progress) return ctx.notFound("Job not found");
+    const { jobId, uploadSessionId } = ctx.query;
+    const userId = ctx.state.user?.id;
+
+    const progress = await strapi
+      .service("api::bulk-job.bulk-job")
+      .getProgress(jobId, userId, uploadSessionId);
+
     return ctx.send(progress);
   },
 }));

@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bulk_tasks",
+  "info": {
+    "singularName": "bulk-task",
+    "pluralName": "bulk-tasks",
+    "displayName": "bulk-task"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "jobId": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::bulk-job.bulk-job"
+    },
+    "batch_index": {
+      "type": "integer"
+    },
+    "payload": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed"
+      ]
+    }
+  }
+}

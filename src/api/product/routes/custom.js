@@ -16,6 +16,14 @@ module.exports = {
       "config": {
         "policies": []
       }
+    },
+    {
+      "method": "GET",
+      "path": "/products/active-job",
+      "handler": "product.activeJob",
+      "config": {
+        "policies": []
+      }
     }
   ]
 

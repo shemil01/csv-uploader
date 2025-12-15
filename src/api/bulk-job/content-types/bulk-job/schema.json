@@ -4,20 +4,56 @@
   "info": {
     "singularName": "bulk-job",
     "pluralName": "bulk-jobs",
-    "displayName": "Bulk Job"
+    "displayName": "Bulk Job",
+    "description": ""
   },
-  "options": { "draftAndPublish": false },
+  "options": {
+    "draftAndPublish": false
+  },
   "attributes": {
-    "jobId": { "type": "uid", "targetField": "id", "unique": true },
+    "jobId": {
+      "type": "uid",
+      "unique": true
+    },
     "status": {
       "type": "enumeration",
-      "enum": ["pending", "processing", "completed", "failed"],
+      "enum": [
+        "pending",
+        "queued",
+        "processing",
+        "completed",
+        "failed"
+      ],
       "default": "pending"
     },
-    "total_items": { "type": "integer" },
-    "processed_items": { "type": "integer", "default": 0 },
-    "error": { "type": "text" },
-    "meta": { "type": "json" },
-    "payload": { "type": "json", "private": true }
+    "total_items": {
+      "type": "integer"
+    },
+    "processed_items": {
+      "type": "integer",
+      "default": 0
+    },
+    "error": {
+      "type": "text"
+    },
+    "meta": {
+      "type": "json"
+    },
+    "payload": {
+      "type": "json",
+      "private": true
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "bulk_jobs"
+    },
+    "deviceId": {
+      "type": "string"
+    },
+    "uploadSessionId": {
+      "type": "string"
+    }
   }
 }
