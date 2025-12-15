@@ -365,6 +365,7 @@ export interface AdminUser extends Schema.CollectionType {
 export interface ApiBulkJobBulkJob extends Schema.CollectionType {
   collectionName: 'bulk_jobs';
   info: {
+    description: '';
     displayName: 'Bulk Job';
     pluralName: 'bulk-jobs';
     singularName: 'bulk-job';
@@ -380,19 +381,65 @@ export interface ApiBulkJobBulkJob extends Schema.CollectionType {
       'admin::user'
     > &
       Attribute.Private;
+    deviceId: Attribute.String;
     error: Attribute.Text;
-    jobId: Attribute.UID<'api::bulk-job.bulk-job', 'id'> & Attribute.Unique;
+    jobId: Attribute.UID & Attribute.Unique;
     meta: Attribute.JSON;
     payload: Attribute.JSON & Attribute.Private;
     processed_items: Attribute.Integer & Attribute.DefaultTo<0>;
     status: Attribute.Enumeration<
-      ['pending', 'processing', 'completed', 'failed']
+      ['pending', 'queued', 'processing', 'completed', 'failed']
     > &
       Attribute.DefaultTo<'pending'>;
     total_items: Attribute.Integer;
     updatedAt: Attribute.DateTime;
     updatedBy: Attribute.Relation<
       'api::bulk-job.bulk-job',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    uploadSessionId: Attribute.String;
+    user: Attribute.Relation<
+      'api::bulk-job.bulk-job',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiBulkTaskBulkTask extends Schema.CollectionType {
+  collectionName: 'bulk_tasks';
+  info: {
+    displayName: 'bulk-task';
+    pluralName: 'bulk-tasks';
+    singularName: 'bulk-task';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    batch_index: Attribute.Integer;
+    createdAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::bulk-task.bulk-task',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    jobId: Attribute.Relation<
+      'api::bulk-task.bulk-task',
+      'oneToOne',
+      'api::bulk-job.bulk-job'
+    >;
+    payload: Attribute.JSON;
+    publishedAt: Attribute.DateTime;
+    status: Attribute.Enumeration<
+      ['pending', 'processing', 'completed', 'failed']
+    >;
+    updatedAt: Attribute.DateTime;
+    updatedBy: Attribute.Relation<
+      'api::bulk-task.bulk-task',
       'oneToOne',
       'admin::user'
     > &
@@ -861,6 +908,11 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
   };
   attributes: {
     blocked: Attribute.Boolean & Attribute.DefaultTo<false>;
+    bulk_jobs: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::bulk-job.bulk-job'
+    >;
     confirmationToken: Attribute.String & Attribute.Private;
     confirmed: Attribute.Boolean & Attribute.DefaultTo<false>;
     createdAt: Attribute.DateTime;
@@ -914,6 +966,7 @@ declare module '@strapi/types' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::bulk-job.bulk-job': ApiBulkJobBulkJob;
+      'api::bulk-task.bulk-task': ApiBulkTaskBulkTask;
       'api::category.category': ApiCategoryCategory;
       'api::product.product': ApiProductProduct;
       'plugin::content-releases.release': PluginContentReleasesRelease;

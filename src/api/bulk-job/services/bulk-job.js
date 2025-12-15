@@ -5,75 +5,74 @@ const { v4: uuidv4 } = require("uuid");
 
 module.exports = createCoreService("api::bulk-job.bulk-job", ({ strapi }) => ({
   async startJobFromPayload(payloadArray, opts = {}) {
-    // payloadArray: full array of items (could be very large)
-    const chunkSize = opts.chunkSize || 100;
-
     const jobId = uuidv4();
 
-    // create job record
+    const sessionId = opts.uploadSessionId;
+
+    const jobData = {
+      jobId,
+      status: "processing",
+      uploadSessionId: sessionId,
+      total_items: payloadArray.length,
+      processed_items: 0,
+      payload: payloadArray,
+      user: opts.userId,
+    };
+
     const job = await strapi.entityService.create("api::bulk-job.bulk-job", {
-      data: {
-        jobId,
-        status: "pending",
-        total_items: Array.isArray(payloadArray) ? payloadArray.length : 0,
-        processed_items: 0,
-        payload: payloadArray,  
-      },
+      data: jobData,
     });
 
-    // run processor asynchronously (do not await)
     (async () => {
       try {
-        await strapi.entityService.update("api::bulk-job.bulk-job", job.id, {
-          data: { status: "processing" },
-        });
+        for (let i = 0; i < payloadArray.length; i += 100) {
+          const batch = payloadArray.slice(i, i + 100);
 
-        const total = payloadArray.length;
-        for (let i = 0; i < total; i += chunkSize) {
-          const batch = payloadArray.slice(i, i + chunkSize);
-          // call product service batch upsert
-          const result = await strapi.service("api::product.product").bulkUpsertBatch(batch);
+          await strapi.service("api::product.product").bulkUpsertBatch(batch);
 
-          // update job processed count
           await strapi.entityService.update("api::bulk-job.bulk-job", job.id, {
             data: {
-              processed_items: Math.min(total, (i + chunkSize)),
-              meta: {
-                ...(job.meta || {}),
-                last_batch_result: result,
-              },
+              processed_items: Math.min(i + 100, payloadArray.length),
             },
           });
 
-          // optional: small delay to yield event loop (prevents blocking)
-          await new Promise((r) => setImmediate(r));
+          await new Promise((res) => setImmediate(res));
         }
 
         await strapi.entityService.update("api::bulk-job.bulk-job", job.id, {
           data: { status: "completed" },
         });
       } catch (err) {
-        strapi.log.error("Bulk job failed", err);
         await strapi.entityService.update("api::bulk-job.bulk-job", job.id, {
           data: { status: "failed", error: String(err) },
         });
       }
-    })();   
+    })();
 
-    return { jobId, jobRecordId: job.id };
+    return { jobId };
   },
 
-  async getProgress(jobId) {
-    const job = await strapi.db.query("api::bulk-job.bulk-job").findOne({ where: { jobId } });
-    if (!job) return null;
-    const percentage = job.total_items > 0 ? Math.round((job.processed_items / job.total_items) * 100) : 0;
+  async getProgress(jobId, userId, uploadSessionId) {
+    const job = await strapi.db
+      .query("api::bulk-job.bulk-job")
+      .findOne({ where: { jobId }, populate: ["user"] });
+
+    if (!job) return { status: "not_found" };
+
+    if (job.user?.id !== userId) return { status: "unauthorized" };
+
+    if (job.uploadSessionId !== uploadSessionId)
+      return { status: "not_found_for_session" };
+
+    const percentage =
+      job.total_items > 0 ? (job.processed_items / job.total_items) * 100 : 0;
+
     return {
-      jobId: job.jobId,
+      jobId,
       status: job.status,
-      total_items: job.total_items,
+      percentage: percentage.toFixed(1),
       processed_items: job.processed_items,
-      percentage,
-      error: job.error,
+      total_items: job.total_items,
     };
   },
 }));
